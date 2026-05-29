@@ -1,0 +1,8 @@
+### Login Test
+POST https://music.onlineincomehub.org/cumpusfoodapi/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "admin@bsu.ac.ug",
+    "password": "Admin@1234"
+}

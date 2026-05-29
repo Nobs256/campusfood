@@ -1,0 +1,12 @@
+{
+  "name": "bsu/foodhub-api",
+  "description": "BSU FoodHub REST API",
+  "require": {
+    "firebase/php-jwt": "^5.5",
+    "vlucas/phpdotenv": "^4.2"
+  },
+  "autoload": { "psr-4": { "": "controllers/" } },
+  "config": {
+    "platform-check": false
+  }
+}
