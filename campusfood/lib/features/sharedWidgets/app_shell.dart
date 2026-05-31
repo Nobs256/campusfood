@@ -115,7 +115,7 @@ class AppShell extends ConsumerWidget {
       if (location.startsWith('/budget')) return 2;
       if (role == 'student') {
         // if (location.startsWith('/student/favorites')) return 3;
-        if (location.startsWith('/compare')) return 3;
+        if (location.startsWith('/comparebar')) return 3;
         if (location.startsWith('/profile')) return 4;
       } else {
         if (location.startsWith('/profile')) return 3;
@@ -146,7 +146,7 @@ class AppShell extends ConsumerWidget {
     } else {
       if (role == 'student') {
         // final paths = ['/home', '/search', '/budget', '/student/favorites', '/profile'];
-        final paths = ['/home', '/search', '/budget', '/compare', '/profile'];
+        final paths = ['/home', '/search', '/budget', '/comparebar', '/profile'];
         context.go(paths[index]);
       } else {
         final paths = ['/home', '/search', '/budget', '/profile'];

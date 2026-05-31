@@ -6,6 +6,26 @@ part of 'compare_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$processedCompareListHash() =>
+    r'977e2131b688c619356b834d1a752c2bcfee90bb';
+
+/// See also [processedCompareList].
+@ProviderFor(processedCompareList)
+final processedCompareListProvider =
+    AutoDisposeProvider<List<FoodItem>>.internal(
+      processedCompareList,
+      name: r'processedCompareListProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$processedCompareListHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ProcessedCompareListRef = AutoDisposeProviderRef<List<FoodItem>>;
 String _$compareListHash() => r'e4a026f85b8d03811465f50bf37f1da550f04c9d';
 
 /// See also [CompareList].

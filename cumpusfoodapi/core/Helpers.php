@@ -11,7 +11,10 @@ function generateSlug(PDO $db, string $name): string {
     $base = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($name)));
     $slug = trim($base, '-');
     $i    = 1;
-    while ($db->prepare("SELECT id FROM vendors WHERE slug=?")->execute([$slug])->fetch()) {
+    $stmt = $db->prepare("SELECT id FROM vendors WHERE slug=?");
+    while (true) {
+        $stmt->execute([$slug]);
+        if (!$stmt->fetch()) break;
         $slug = $base . '-' . $i++;
     }
     return $slug;

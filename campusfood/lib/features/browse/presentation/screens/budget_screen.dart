@@ -100,13 +100,16 @@ class _RecommendationSection extends StatelessWidget {
         Text(title, style: AppTextStyles.h3),
         const Gap(8),
         SizedBox(
-          height: 180,
+          height: 320,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: foods.length,
             itemBuilder:
                 (context, index) =>
-                    SizedBox(width: 250, child: FoodCard(food: foods[index])),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: SizedBox(width: 260, child: FoodCard(food: foods[index])),
+                    ),
           ),
         ),
       ],

@@ -25,6 +25,11 @@ if ($basePath !== '/' && strpos($uri, $basePath) === 0) {
 $uri    = preg_replace('#^/api/v1#', '', $uri);
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Support method spoofing for multipart PUT/PATCH requests via POST
+if ($method === 'POST' && isset($_REQUEST['_method'])) {
+    $method = strtoupper($_REQUEST['_method']);
+}
+
 // Route table: [METHOD, pattern, controller, action, auth_required, roles]
 $routes = [
   // Auth

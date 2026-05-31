@@ -116,14 +116,15 @@ class FoodController {
         $db   = Database::getInstance();
         $body = array_merge(Request::json(), $_POST);
 
-        $check = $db->prepare("SELECT fi.id FROM food_items fi JOIN vendors v ON v.id=fi.vendor_id WHERE fi.id=? AND v.user_id=?");
-        $check->execute([(int)$id, $this->auth['uid']]);
-        if (!$check->fetch()) Response::error('Forbidden', 403);
+        $stmt = $db->prepare("SELECT fi.id, fi.image_url FROM food_items fi JOIN vendors v ON v.id=fi.vendor_id WHERE fi.id=? AND v.user_id=?");
+        $stmt->execute([(int)$id, $this->auth['uid']]);
+        $existing = $stmt->fetch();
+        if (!$existing) Response::error('Forbidden or not found', 403);
 
         $missing = validateRequired($body, ['name','price','category_id']);
         if ($missing) Response::error('Missing: ' . implode(', ', $missing), 422);
 
-        $imageUrl = $body['image_url'] ?? null;
+        $imageUrl = $existing['image_url']; // Default to current image URL
         if (!empty($_FILES['image'])) {
             try { $imageUrl = uploadImage($_FILES['image'], 'foods'); }
             catch (Exception $e) { Response::error($e->getMessage(), 422); }
@@ -154,5 +155,33 @@ class FoodController {
         $db->prepare("UPDATE food_items fi JOIN vendors v ON v.id=fi.vendor_id SET fi.is_available = NOT fi.is_available WHERE fi.id=? AND v.user_id=?")
            ->execute([(int)$id, $this->auth['uid']]);
         Response::json(['updated' => true]);
+    }
+    
+    public function compare(): void {
+        $db  = Database::getInstance();
+        $ids = array_filter(array_map('intval', explode(',', Request::get('ids', ''))));
+        if (empty($ids) || count($ids) > 4) Response::error('Provide 1–4 food IDs', 422);
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $db->prepare("
+            SELECT fi.*, c.name AS category_name, c.icon AS category_icon,
+                   v.business_name AS vendor_name, v.slug AS vendor_slug, v.location AS vendor_location
+            FROM food_items fi
+            JOIN vendors v ON v.id=fi.vendor_id
+            JOIN categories c ON c.id=fi.category_id
+            WHERE fi.id IN ($placeholders) AND v.status='approved'
+        ");
+        $stmt->execute($ids);
+        $items = $stmt->fetchAll();
+
+        if ($items) {
+            $minPrice  = min(array_column($items, 'price'));
+            $maxRating = max(array_column($items, 'avg_rating'));
+            foreach ($items as &$i) {
+                $i['is_cheapest']      = (float)$i['price'] == (float)$minPrice;
+                $i['is_highest_rated'] = (float)$i['avg_rating'] == (float)$maxRating && (float)$i['avg_rating'] > 0;
+            }
+        }
+        Response::json($items);
     }
 }

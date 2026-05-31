@@ -29,6 +29,7 @@ import 'package:campusfood/features/admin/presentation/screens/categories_screen
 import 'package:campusfood/features/admin/presentation/screens/reports_screen.dart';
 
 import '../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../features/browse/presentation/screens/compare_bottom_bar.dart';
 import '../features/browse/presentation/screens/profile_screen.dart';
 import '../features/sharedWidgets/app_shell.dart';
 
@@ -101,6 +102,10 @@ GoRouter appRouter(AppRouterRef ref) {
           GoRoute(
             path: '/compare',
             builder: (context, state) => const CompareScreen(),
+          ),
+          GoRoute(
+            path: '/comparebar',
+            builder: (context, state) => const CompareBottomBar(),
           ),
           GoRoute(
             path: '/profile',

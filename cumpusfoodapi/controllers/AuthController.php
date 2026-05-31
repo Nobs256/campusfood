@@ -28,68 +28,119 @@ class AuthController {
             $vendorData = $vs->fetch();
         }
 
+        // Nest vendor data inside user for model consistency on the frontend
+        if ($vendorData) {
+            $user['vendor'] = $vendorData;
+        }
+
         $db->prepare("UPDATE users SET last_login=NOW() WHERE id=?")->execute([$user['id']]);
         $tokens = Auth::issueTokens($user);
         unset($user['password']);
 
-        Response::json(array_merge($tokens, ['user' => $user, 'vendor' => $vendorData]));
+        Response::json(array_merge($tokens, ['user' => $user]));
     }
 
     public function register(): void {
         $db   = Database::getInstance();
+
+        // Detect if post size limit was exceeded. PHP wipes $_POST/$_FILES if limit is hit for multipart data.
+        // We only trigger this for multipart/form-data requests.
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && 
+            strpos($contentType, 'multipart/form-data') !== false &&
+            empty($_POST) && empty($_FILES) && 
+            ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+            Response::error('Upload limit exceeded. Try smaller images.', 413);
+        }
+
         // Support both JSON (student registration) and multipart/form-data (image uploads)
         $body = !empty($_POST) ? $_POST : Request::json();
         $type = sanitize($body['type'] ?? '');
 
-        $missing = validateRequired($body, ['full_name','email','password','type']);
+        $missing = validateRequired($body, ['full_name', 'email', 'password', 'type']);
         if ($missing) Response::error('Missing fields: ' . implode(', ', $missing), 422);
         if (!in_array($type, ['student','vendor'])) Response::error('Type must be student or vendor', 422);
         if (strlen($body['password']) < 8) Response::error('Password must be at least 8 characters', 422);
+
+        // Pre-validate vendor requirements before starting database operations
+        if ($type === 'vendor') {
+            $missingVendor = validateRequired($body, ['business_name', 'location']);
+            if ($missingVendor) Response::error('Vendor requires business_name and location', 422);
+        }
 
         $ex = $db->prepare("SELECT id FROM users WHERE email=?");
         $ex->execute([sanitize($body['email'])]);
         if ($ex->fetch()) Response::error('Email already registered', 409);
 
-        // Handle user profile avatar upload
-        $avatarUrl = null;
-        if (!empty($_FILES['avatar'])) {
-            try { $avatarUrl = uploadImage($_FILES['avatar'], 'users'); }
-            catch (Exception $e) { Response::error($e->getMessage(), 422); }
+        try {
+            $db->beginTransaction();
+
+            // Handle user profile avatar upload inside the transaction block
+            $avatarUrl = null;
+            $avatarKey = !empty($_FILES['avatar']) ? 'avatar' : (!empty($_FILES['avatar_url']) ? 'avatar_url' : (!empty($_FILES['profile_image']) && $type === 'student' ? 'profile_image' : null));
+            
+            if ($avatarKey) {
+                try { $avatarUrl = uploadImage($_FILES[$avatarKey], 'users'); }
+                catch (Exception $e) { throw new Exception("Avatar upload failed: " . $e->getMessage()); }
+            }
+
+            $db->prepare("INSERT INTO users (full_name, email, password, role, phone, avatar_url) VALUES (?,?,?,?,?,?)")
+               ->execute([sanitize($body['full_name']), sanitize($body['email']), password_hash($body['password'], PASSWORD_BCRYPT, ['cost'=>12]), $type, sanitize($body['phone'] ?? ''), $avatarUrl]);
+            $userId = (int)$db->lastInsertId();
+
+            $vendorData = null;
+            if ($type === 'vendor') {
+                // Handle vendor images
+                $profileImg = null;
+                $bannerImg = null;
+                try {
+                    if (!empty($_FILES['profile_image'])) $profileImg = uploadImage($_FILES['profile_image'], 'vendors');
+                    if (!empty($_FILES['banner_image']))  $bannerImg  = uploadImage($_FILES['banner_image'], 'vendors');
+                } catch (Exception $e) {
+                    throw new Exception("Vendor image upload failed: " . $e->getMessage());
+                }
+
+                $slug = generateSlug($db, $body['business_name']);
+                $db->prepare("INSERT INTO vendors (user_id, business_name, slug, description, location, phone, whatsapp, opening_time, closing_time, profile_image, banner_image, status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+                   ->execute([
+                        $userId, sanitize($body['business_name']), $slug, sanitize($body['description'] ?? ''), 
+                        sanitize($body['location']), sanitize($body['phone'] ?? ''), sanitize($body['whatsapp'] ?? ''), 
+                        $body['opening_time'] ?? null, $body['closing_time'] ?? null, $profileImg, $bannerImg, 'pending'
+                    ]);
+
+                $vs = $db->prepare("SELECT * FROM vendors WHERE user_id=?");
+                $vs->execute([$userId]);
+                $vendorData = $vs->fetch();
+                if ($vendorData) {
+                    // Cast to ensure compatibility with Dart models
+                    $vendorData['id'] = (int)$vendorData['id'];
+                    $vendorData['user_id'] = (int)$vendorData['user_id'];
+                    $vendorData['avg_rating'] = (float)($vendorData['avg_rating'] ?? 0);
+                    $vendorData['total_ratings'] = (int)($vendorData['total_ratings'] ?? 0);
+                }
+            }
+
+            $userStmt = $db->prepare("SELECT * FROM users WHERE id=?");
+            $userStmt->execute([$userId]);
+            $user = $userStmt->fetch();
+            if ($user) {
+                $user['id'] = (int)$user['id']; // Cast ID to int for Flutter
+                unset($user['password']);
+                // Nest vendor data inside user for model consistency on the frontend
+                if ($vendorData) {
+                    $user['vendor'] = $vendorData;
+                }
+            }
+            $tokens = Auth::issueTokens($user);
+
+            $db->commit();
+            Response::json(array_merge($tokens, ['user' => $user]), 201);
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            Response::error($e->getMessage(), 500);
         }
-
-        $db->prepare("INSERT INTO users (full_name, email, password, role, phone, avatar_url) VALUES (?,?,?,?,?,?)")
-           ->execute([sanitize($body['full_name']), sanitize($body['email']), password_hash($body['password'], PASSWORD_BCRYPT, ['cost'=>12]), $type, sanitize($body['phone'] ?? ''), $avatarUrl]);
-        $userId = $db->lastInsertId();
-
-        $vendorData = null;
-        if ($type === 'vendor') {
-            $missing2 = validateRequired($body, ['business_name','location']);
-            if ($missing2) Response::error('Vendor requires business_name and location', 422);
-
-            // Handle vendor specific images
-            $profileImage = null;
-            $bannerImage  = null;
-            try {
-                if (!empty($_FILES['profile_image'])) $profileImage = uploadImage($_FILES['profile_image'], 'vendors');
-                if (!empty($_FILES['banner_image']))  $bannerImage  = uploadImage($_FILES['banner_image'], 'vendors');
-            } catch (Exception $e) { Response::error($e->getMessage(), 422); }
-
-            $slug = generateSlug($db, $body['business_name']);
-            $db->prepare("INSERT INTO vendors (user_id, business_name, slug, description, location, phone, whatsapp, opening_time, closing_time, profile_image, banner_image) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-               ->execute([$userId, sanitize($body['business_name']), $slug, sanitize($body['description'] ?? ''), sanitize($body['location']), sanitize($body['phone'] ?? ''), sanitize($body['whatsapp'] ?? ''), $body['opening_time'] ?? null, $body['closing_time'] ?? null, $profileImage, $bannerImage]);
-
-            // Fetch vendor data to return in response
-            $vs = $db->prepare("SELECT * FROM vendors WHERE user_id=?");
-            $vs->execute([$userId]);
-            $vendorData = $vs->fetch();
-        }
-
-        $userStmt = $db->prepare("SELECT * FROM users WHERE id=?");
-        $userStmt->execute([$userId]);
-        $user = $userStmt->fetch();
-        unset($user['password']);
-        $tokens = Auth::issueTokens($user);
-        Response::json(array_merge($tokens, ['user' => $user, 'vendor' => $vendorData]), 201);
     }
 
     public function refresh(): void {

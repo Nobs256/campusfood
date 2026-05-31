@@ -31,6 +31,7 @@ class _AddEditFoodScreenState extends ConsumerState<AddEditFoodScreen> {
   int? _selectedCategoryId;
   bool _isAvailable = true;
   bool _isFeatured = false;
+  String? _existingImageUrl;
   File? _selectedImage;
   bool _isLoading = false;
 
@@ -55,6 +56,7 @@ class _AddEditFoodScreenState extends ConsumerState<AddEditFoodScreen> {
       _selectedCategoryId = food.categoryId;
       _isAvailable = food.isAvailable;
       _isFeatured = food.isFeatured ?? false;
+      _existingImageUrl = food.imageUrl;
     });
   }
 
@@ -160,6 +162,14 @@ class _AddEditFoodScreenState extends ConsumerState<AddEditFoodScreen> {
                                       fit: BoxFit.cover,
                                     ),
                                   )
+                                  : _existingImageUrl != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Image.network(
+                                            _existingImageUrl!,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
                                   : const Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [

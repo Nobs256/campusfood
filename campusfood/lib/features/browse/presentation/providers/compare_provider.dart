@@ -22,3 +22,20 @@ class CompareList extends _$CompareList {
 
   void clear() => state = [];
 }
+
+@riverpod
+List<FoodItem> processedCompareList(ProcessedCompareListRef ref) {
+  final list = ref.watch(compareListProvider);
+  if (list.isEmpty) return [];
+
+  final minPrice = list.map((e) => e.price).reduce((a, b) => a < b ? a : b);
+  final maxRating = list.map((e) => e.avgRating).reduce((a, b) => a > b ? a : b);
+
+  return list.map((food) {
+    final isHigh = food.avgRating == maxRating && food.avgRating > 0;
+    return food.copyWith(
+      isCheapest: food.price == minPrice,
+      isHighestRated: isHigh,
+    );
+  }).toList();
+}

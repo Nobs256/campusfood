@@ -14,7 +14,7 @@ class CompareScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final compareList = ref.watch(compareListProvider);
+    final compareList = ref.watch(processedCompareListProvider);
 
     if (compareList.isEmpty) {
       return Scaffold(
@@ -54,11 +54,11 @@ class CompareScreen extends ConsumerWidget {
               children: [
                 const Gap(220), // Matches header height
                 _buildLabel('Price'),
+                _buildLabel('Rating'),
                 _buildLabel('Vendor'),
                 _buildLabel('Category'),
-                _buildLabel('Rating'),
                 _buildLabel('Status'),
-                _buildLabel('Serving'),
+                _buildLabel('Size'),
                 _buildLabel('Calories'),
               ],
             ),
@@ -107,20 +107,6 @@ class CompareScreen extends ConsumerWidget {
                     ),
                     Row(
                       children:
-                          compareList
-                              .map((f) => _buildData(f.vendorName, columnWidth))
-                              .toList(),
-                    ),
-                    Row(
-                      children:
-                          compareList
-                              .map(
-                                (f) => _buildData(f.categoryName, columnWidth),
-                              )
-                              .toList(),
-                    ),
-                    Row(
-                      children:
                           compareList.map((food) {
                             final isHighest = food.isHighestRated ?? false;
                             return _buildDataWidget(
@@ -149,6 +135,20 @@ class CompareScreen extends ConsumerWidget {
                     Row(
                       children:
                           compareList
+                              .map((f) => _buildData(f.vendorName, columnWidth))
+                              .toList(),
+                    ),
+                    Row(
+                      children:
+                          compareList
+                              .map(
+                                (f) => _buildData(f.categoryName, columnWidth),
+                              )
+                              .toList(),
+                    ),
+                    Row(
+                      children:
+                          compareList
                               .map(
                                 (f) => _buildData(
                                   f.isAvailable ? 'Available' : 'Sold Out',
@@ -162,7 +162,7 @@ class CompareScreen extends ConsumerWidget {
                           compareList
                               .map(
                                 (f) => _buildData(
-                                  f.servingSize ?? '-',
+                                  f.servingSize?.isNotEmpty == true ? f.servingSize! : '-',
                                   columnWidth,
                                 ),
                               )

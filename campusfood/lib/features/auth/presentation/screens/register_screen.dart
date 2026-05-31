@@ -107,7 +107,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       }
       setState(() => _errorMessage = message);
     } catch (e) {
-      setState(() => _errorMessage = 'An unexpected error occurred. Please try again.');
+      setState(
+        () => _errorMessage = 'An unexpected error occurred. Please try again.',
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -150,12 +152,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                         CircleAvatar(
                           radius: 50,
                           backgroundColor: AppColors.background,
-                          backgroundImage: _avatarFile != null
-                              ? FileImage(File(_avatarFile!.path))
-                              : null,
-                          child: _avatarFile == null
-                              ? const Icon(Icons.add_a_photo, size: 40)
-                              : null,
+                          backgroundImage:
+                              _avatarFile != null
+                                  ? FileImage(File(_avatarFile!.path))
+                                  : null,
+                          child:
+                              _avatarFile == null
+                                  ? const Icon(Icons.add_a_photo, size: 40)
+                                  : null,
                         ),
                         if (_avatarFile != null)
                           Positioned(
@@ -167,7 +171,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                       ],
@@ -236,23 +244,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                             Expanded(
                               child: Column(
                                 children: [
-                                  const Text('Profile', style: TextStyle(fontSize: 12)),
+                                  const Text(
+                                    'Profile',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   const Gap(4),
                                   GestureDetector(
-                                    onTap: () => _pickImage(ImageSource.gallery, 'profile'),
+                                    onTap:
+                                        () => _pickImage(
+                                          ImageSource.gallery,
+                                          'profile',
+                                        ),
                                     child: Container(
                                       height: 100,
                                       decoration: BoxDecoration(
                                         color: AppColors.background,
                                         borderRadius: BorderRadius.circular(8),
-                                        image: _profileImageFile != null
-                                            ? DecorationImage(
-                                                image: FileImage(File(_profileImageFile!.path)),
-                                                fit: BoxFit.cover,
-                                              )
-                                            : null,
+                                        image:
+                                            _profileImageFile != null
+                                                ? DecorationImage(
+                                                  image: FileImage(
+                                                    File(
+                                                      _profileImageFile!.path,
+                                                    ),
+                                                  ),
+                                                  fit: BoxFit.cover,
+                                                )
+                                                : null,
                                       ),
-                                      child: _profileImageFile == null ? const Icon(Icons.add_photo_alternate) : null,
+                                      child:
+                                          _profileImageFile == null
+                                              ? const Icon(
+                                                Icons.add_photo_alternate,
+                                              )
+                                              : null,
                                     ),
                                   ),
                                 ],
@@ -262,23 +287,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                             Expanded(
                               child: Column(
                                 children: [
-                                  const Text('Banner', style: TextStyle(fontSize: 12)),
+                                  const Text(
+                                    'Banner',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   const Gap(4),
                                   GestureDetector(
-                                    onTap: () => _pickImage(ImageSource.gallery, 'banner'),
+                                    onTap:
+                                        () => _pickImage(
+                                          ImageSource.gallery,
+                                          'banner',
+                                        ),
                                     child: Container(
                                       height: 100,
                                       decoration: BoxDecoration(
                                         color: AppColors.background,
                                         borderRadius: BorderRadius.circular(8),
-                                        image: _bannerImageFile != null
-                                            ? DecorationImage(
-                                                image: FileImage(File(_bannerImageFile!.path)),
-                                                fit: BoxFit.cover,
-                                              )
-                                            : null,
+                                        image:
+                                            _bannerImageFile != null
+                                                ? DecorationImage(
+                                                  image: FileImage(
+                                                    File(
+                                                      _bannerImageFile!.path,
+                                                    ),
+                                                  ),
+                                                  fit: BoxFit.cover,
+                                                )
+                                                : null,
                                       ),
-                                      child: _bannerImageFile == null ? const Icon(Icons.add_photo_alternate) : null,
+                                      child:
+                                          _bannerImageFile == null
+                                              ? const Icon(
+                                                Icons.add_photo_alternate,
+                                              )
+                                              : null,
                                     ),
                                   ),
                                 ],
